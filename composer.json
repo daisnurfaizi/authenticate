@@ -1,0 +1,19 @@
+{
+    "name": "ijp/auth",
+    "description": "user authentication using jwt which returns cookies access_token and refresh token which will be checked by middleware",
+    "autoload": {
+        "psr-4": {
+            "Ijp\\Auth\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "daisnurfaizi",
+            "email": "dsnurfaizi@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.0",
+        "firebase/php-jwt": "^6.0"
+    }
+}
