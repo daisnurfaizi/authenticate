@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('users', function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table) {
             // add coloumns role_id to users table
             $table->string('role_id', 50)->nullable()->after('password');
             // photo 
@@ -25,7 +25,10 @@ return new class extends Migration
             // status
             $table->integer('status')->default(1)->after('refresh_token');
             // relation one to many to table app_role
-            $table->foreign('role_id')->references('id')->on('app_role')->onDelete('set null');
+            $table->foreign('role_id')
+                ->references('id')
+                ->on('app_role')
+                ->onDelete('set null');
         });
     }
 
