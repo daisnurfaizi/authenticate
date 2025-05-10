@@ -13,6 +13,9 @@ return new class extends Migration
      */
     public function up()
     {
+        if (!Schema::hasTable('app_role') || !Schema::hasTable('app_permissions')) {
+            return;
+        }
         Schema::create('app_role_has_permissions', function (Blueprint $table) {
             $table->string('id', 50)->primary();
             $table->string('role_id', 50);
