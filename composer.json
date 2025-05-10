@@ -19,7 +19,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Ijp\\Auth\\IjpCommandServiceProvider"
+                "Ijp\\Auth\\Providers\\IjpCommandServiceProvider"
             ]
         }
     }

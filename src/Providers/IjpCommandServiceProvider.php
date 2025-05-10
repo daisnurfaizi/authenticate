@@ -1,6 +1,6 @@
 <?php
 
-namespace Ijp\Auth;
+namespace Ijp\Auth\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
