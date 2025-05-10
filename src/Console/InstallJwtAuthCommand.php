@@ -15,6 +15,7 @@ class InstallJwtAuthCommand extends Command
         $this->info('Publishing JWT Auth stubs...');
         $this->call('vendor:publish', [
             '--tag' => 'jwt-auth-stubs',
+            '--tag' => 'jwt-auth-migrations',
         ]);
         $this->info('JWT Auth installed successfully!');
     }
