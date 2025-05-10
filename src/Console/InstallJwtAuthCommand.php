@@ -1,6 +1,8 @@
 <?php
 
-namespace illuminate\Console\Command;
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
 
 class InstallJwtAuthCommand extends Command
 {
