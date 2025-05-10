@@ -28,9 +28,9 @@ class IjpCommandServiceProvider extends ServiceProvider
 
         $this->publishes([
             __DIR__ . '/../migrations/add_role_id_to_user.php' => database_path('migrations/' . date('Y_m_d_His', time()) . '_add_role_id_to_user.php'),
+            __DIR__ . '/../migrations/app_role_table.php' => database_path('migrations/' . date('Y_m_d_His', time()) . '_create_app_role_table.php'),
             __DIR__ . '/../migrations/app_permissions_table.php' => database_path('migrations/' . date('Y_m_d_His', time()) . '_create_app_permissions_table.php'),
             __DIR__ . '/../migrations/app_role_has_permissions_table.php' => database_path('migrations/' . date('Y_m_d_His', time()) . '_create_app_role_has_permissions_table.php'),
-            __DIR__ . '/../migrations/app_role_table.php' => database_path('migrations/' . date('Y_m_d_His', time()) . '_create_app_role_table.php'),
 
         ], 'jwt-auth-migrations');
     }
