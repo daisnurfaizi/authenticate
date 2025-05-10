@@ -1,6 +1,6 @@
 <?php
 
-namespace Ijp\Auth\Helper;
+namespace App\Helper;
 
 class ResponseJsonFormater
 {
