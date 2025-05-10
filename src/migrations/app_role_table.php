@@ -19,8 +19,6 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->integer('status')->default(1);
             $table->timestamps();
-            // relation one to many to table users
-            $table->foreignId('role_id')->constrained('users')->onDelete('null');
         });
     }
 

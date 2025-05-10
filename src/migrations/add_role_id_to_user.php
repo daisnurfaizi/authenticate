@@ -25,7 +25,7 @@ return new class extends Migration
             // status
             $table->integer('status')->default(1)->after('refresh_token');
             // relation one to many to table app_role
-            $table->foreign('role_id')->references('id')->on('app_role')->onDelete('null');
+            $table->foreign('role_id')->references('id')->on('app_role')->onDelete('set null');
         });
     }
 

@@ -18,7 +18,10 @@ return new class extends Migration
             $table->string('name', 50)->unique();
             $table->timestamps();
             // relation one to many to table app_role_has_permissions
-            $table->foreignId('permission_id')->constrained('app_role_has_permissions')->onDelete('null');
+            $table->foreign('permission_id')
+                ->references('id')
+                ->on('app_role_has_permissions')
+                ->onDelete('set null');
         });
     }
 
