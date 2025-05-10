@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console\Commands;
+namespace Ijp\Auth\Console;
 
 use Illuminate\Console\Command;
 
