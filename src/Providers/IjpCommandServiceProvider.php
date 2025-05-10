@@ -4,7 +4,7 @@ namespace Ijp\Auth;
 
 use Illuminate\Support\ServiceProvider;
 
-class IjpCommandServiceProviider extends ServiceProvider
+class IjpCommandServiceProvider extends ServiceProvider
 {
     /**
      * Register the service provider.

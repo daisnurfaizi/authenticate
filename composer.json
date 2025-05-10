@@ -15,5 +15,13 @@
     "require": {
         "php": "^8.0",
         "firebase/php-jwt": "^6.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Ijp\\Auth\\IjpCommandServiceProvider"
+            ]
+        }
     }
+
 }
