@@ -2,28 +2,51 @@
 
 namespace App\Http\Middleware;
 
+use App\Helper\ResponseJsonFormater;
 use Closure;
-use MyLibrary\JwtAuth\JwtAuth;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class JwtMiddleware
 {
-    public function handle($request, Closure $next)
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     */
+    public function handle(Request $request, Closure $next): Response
     {
-        $token = $request->bearerToken();
-
-        if (!$token) {
-            return response()->json(['message' => 'Token not provided'], 401);
+        // Periksa apakah cookie access_token atau refresh_token ada
+        if (!$request->hasCookie('access_token') || !$request->hasCookie('refresh_token')) {
+            return ResponseJsonFormater::error(
+                code: 401,
+                message: 'Unauthorized'
+            );
         }
 
-        $jwtAuth = app(JwtAuth::class);
-        $user = $jwtAuth->validateToken($token, new \App\Models\User());
+        // Ambil access_token dari cookie
+        $accessToken = $request->cookie('access_token');
+        try {
+            // Verifikasi apakah access token valid
+            if (!JWTAuth::setToken($accessToken)->check()) {
+                return ResponseJsonFormater::error(
+                    code: 401,
+                    status: 'invalid',
+                    message: 'Unauthorized: Invalid or expired access token'
+                );
+            }
 
-        if (!$user) {
-            return response()->json(['message' => 'Invalid token'], 401);
+            // Jika token valid, kita bisa mendapatkan payloadnya
+            $payload = JWTAuth::setToken($accessToken)->getPayload();
+        } catch (JWTException $e) {
+            // Tangani error jika ada masalah dengan token (misalnya token kadaluarsa atau tidak valid)
+            return ResponseJsonFormater::error(
+                code: 401,
+                message: 'Unauthorized: Token error'
+            );
         }
-
-        // Attach user to request
-        $request->merge(['user' => $user]);
         return $next($request);
     }
 }
