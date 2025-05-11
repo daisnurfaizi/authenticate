@@ -14,6 +14,10 @@ return new class extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
+            // change id to string
+            $table->string('id', 50)->primary()->change();
+            // change coloumss emmail to username
+            $table->string('username', 50)->nullable()->after('email')->unique()->index();
             // add coloumns role_id to users table
             $table->string('role_id', 50)->nullable()->after('password');
             // photo 

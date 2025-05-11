@@ -14,7 +14,8 @@
     ],
     "require": {
         "php": "^8.0",
-        "tymon/jwt-auth": "^2.2"
+        "tymon/jwt-auth": "^2.2",
+        "ramsey/uuid": "^4.7"
     },
     "extra": {
         "laravel": {
