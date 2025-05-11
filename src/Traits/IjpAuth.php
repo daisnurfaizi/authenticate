@@ -1,11 +1,11 @@
-<?
+<?php
 
-namespace Ijp\Auth\Trait;
+namespace Ijp\Auth\Traits;
 
 use Ramsey\Uuid\Guid\Guid;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
-trait AuthUserIjp
+trait IjpAuth
 {
 
     protected static function booted()
