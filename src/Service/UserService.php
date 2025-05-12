@@ -39,18 +39,35 @@ class UserService
             }
 
             $user = Auth::user();
+            $permissions = $user->role && $user->role->permissions
+                ? $user->role->permissions->map(function ($roleHasPermission) {
+                    return [
+                        'id' => $roleHasPermission->permission->id,
+                        'name' => $roleHasPermission->permission->name,
+                    ];
+                })
+                : [];
 
             return ResponseJsonFormater::success(
                 message: "Success Login",
                 data: [
                     'id' => $user->id,
                     'username' => $user->username,
-                    'role' => $user->role_id,
+                    'role' => [
+                        'id' => $user->role->id,
+                        'name' => $user->role->name,
+                    ],
+                    'permissions' => $permissions,
+
                 ]
             )
                 ->withCookie('access_token', $this->createToken([
                     'username' => $request->username,
-                    'role' => $user->role_id,
+                    'role' => [
+                        'id' => $user->role->id,
+                        'name' => $user->role->name,
+                    ],
+                    'permissions' => $permissions,
                 ]), 60)
                 ->withCookie('refresh_token', $this->createRefreshToken($request), 60 * 24 * 30);
         } catch (ValidationException $e) {

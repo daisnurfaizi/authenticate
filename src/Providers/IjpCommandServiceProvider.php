@@ -25,7 +25,11 @@ class IjpCommandServiceProvider extends ServiceProvider
             __DIR__ . '/../stubs/JwtMiddleware.php' => app_path('Http/Middleware/JwtMiddleware.php'),
             __DIR__ . '/../Helper/ResponseJsonFormater.php' => app_path('Helper/ResponseJsonFormater.php'),
         ], 'jwt-auth-stubs');
-
+        $this->publishes([
+            __DIR__ . '/../stubs/Auth.php' => base_path('routes/Auth/Auth.php'),
+            // __DIR__ . '/../stubs/Role.php' => base_path('routes/Auth/Role.php'),
+            // __DIR__ . '/../stubs/Permission.php' => base_path('routes/Auth/Permission.php'),
+        ], 'jwt-auth-routes');
         $this->publishes([
             __DIR__ . '/../migrations/app_role_table.php' => database_path('migrations/' . date('Y_m_d_His', time()) . '_create_app_role_table.php'),
             // beri jeda 1 detik agar tidak bentrok dengan migration yang lain

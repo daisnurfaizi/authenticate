@@ -2,6 +2,7 @@
 
 namespace Ijp\Auth\Traits;
 
+use Ijp\Auth\Model\RoleModel;
 use Ramsey\Uuid\Guid\Guid;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
@@ -38,5 +39,10 @@ trait IjpAuth
             'name' => $this->name,
             'username' => $this->username,
         ];
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(RoleModel::class, 'role_id', 'id');
     }
 }

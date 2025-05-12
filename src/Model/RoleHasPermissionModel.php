@@ -2,19 +2,17 @@
 
 namespace Ijp\Auth\Model;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Guid\Guid;
 
-class RoleModel extends Model
+class RoleHasPermissionModel extends Model
 {
-    protected $table = 'app_role';
+    protected $table = 'app_role_has_permissions';
     protected $keyType = 'string';
     protected $fillable = [
+        'role_id',
+        'permission_id',
         'name',
-        'description',
-        'status',
-
     ];
 
     protected static function booted()
@@ -25,9 +23,13 @@ class RoleModel extends Model
             }
         });
     }
-
-    public function permissions()
+    public function role()
     {
-        return $this->hasMany(RoleHasPermissionModel::class, 'role_id', 'id');
+        return $this->belongsTo(RoleModel::class, 'role_id', 'id');
+    }
+
+    public function permission()
+    {
+        return $this->belongsTo(PermissionModel::class, 'permission_id', 'id');
     }
 }

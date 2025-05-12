@@ -18,8 +18,8 @@ return new class extends Migration
         }
         Schema::create('app_role_has_permissions', function (Blueprint $table) {
             $table->string('id', 50)->primary();
-            $table->string('role_id', 50);
-            $table->string('permission_id', 50);
+            $table->string('role_id', 50)->nullable();
+            $table->string('permission_id', 50)->nullable();
             $table->string('name', 50);
             $table->timestamps();
             // relation namy to one to table app_role
