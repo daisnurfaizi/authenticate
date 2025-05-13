@@ -29,22 +29,16 @@ Setelah menjalankan `composer require`, ada beberapa langkah yang perlu Anda lak
 
    class User extends Authenticatable implements JWTSubject
    {
-       use Notifiable;
+       use Notifiable,IjpAuth;
 
-       // Implementasi metode yang diperlukan
-       public function getJWTIdentifier()
-       {
-           return $this->getKey();
-       }
-
-       public function getJWTCustomClaims()
-       {
-           return [];
-       }
    }
    ```
 
-   Pastikan model User Anda mengimplementasikan interface `JWTSubject` dan menggunakan trait `Notifiable`.
+   Pastikan model User Anda mengimplementasikan interface `JWTSubject` dan menggunakan trait `Notifiable` dan `IjpAuth`.
+
+   ```php
+
+   ```
 
 3. **Tambahkan Middleware ke Kernel.php**
    Jika Anda menggunakan middleware untuk autentikasi dan otorisasi, tambahkan middleware berikut ke dalam file `bootstrap/app.php`:
@@ -52,7 +46,7 @@ Setelah menjalankan `composer require`, ada beberapa langkah yang perlu Anda lak
    ```php
        ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'authcheck' => AuthCheck::class,
+            'IjpAuth' => AuthCheck::class,
         ]);
     })
    ```
