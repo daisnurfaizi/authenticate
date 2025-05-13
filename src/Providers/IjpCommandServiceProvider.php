@@ -22,12 +22,13 @@ class IjpCommandServiceProvider extends ServiceProvider
     {
         $this->publishes([
             __DIR__ . '/../stubs/AuthController.php' => app_path('Http/Controllers/AuthController.php'),
+            __DIR__ . '/../stubs/RoleController.php' => app_path('Http/Controllers/RoleController.php'),
             __DIR__ . '/../stubs/JwtMiddleware.php' => app_path('Http/Middleware/JwtMiddleware.php'),
             __DIR__ . '/../Helper/ResponseJsonFormater.php' => app_path('Helper/ResponseJsonFormater.php'),
         ], 'jwt-auth-stubs');
         $this->publishes([
             __DIR__ . '/../stubs/Auth.php' => base_path('routes/Auth/Auth.php'),
-            // __DIR__ . '/../stubs/Role.php' => base_path('routes/Auth/Role.php'),
+            __DIR__ . '/../stubs/Role.php' => base_path('routes/Role/Role.php'),
             // __DIR__ . '/../stubs/Permission.php' => base_path('routes/Auth/Permission.php'),
         ], 'jwt-auth-routes');
         $this->publishes([

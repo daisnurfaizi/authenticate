@@ -8,6 +8,7 @@ use Ramsey\Uuid\Guid\Guid;
 
 class RoleModel extends Model
 {
+    public $incrementing = false;
     protected $table = 'app_role';
     protected $keyType = 'string';
     protected $fillable = [

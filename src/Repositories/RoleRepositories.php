@@ -20,7 +20,27 @@ class RoleRepositories extends BaseRepositories
 
     public function getRoleById($id)
     {
-        $roleStored = $this->showBy(field: 'id', value: $id);
+        $roleStored = $this->getModels()::select('id', 'name', 'description', 'status') // 'name' harus ada di sini
+            ->with('permissions') // Relasi 'permissions' dengan kolom yang diinginkan
+            ->where('id', $id)
+            ->first();
         return $roleStored;
+    }
+
+    public function updateRole($id, $data)
+    {
+        $roleStored = $this->showBy(field: 'id', value: $id);
+        $roleStored->update($data);
+        return $roleStored;
+    }
+
+    public function deleteRole($id)
+    {
+        $roleStored = $this->showBy(field: 'id', value: $id);
+        if ($roleStored) {
+            $roleStored->delete();
+            return $roleStored;
+        }
+        return false;
     }
 }
