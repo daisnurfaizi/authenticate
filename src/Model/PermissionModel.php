@@ -9,6 +9,7 @@ class PermissionModel extends Model
 {
     protected $table = 'app_permissions';
     protected $keyType = 'string';
+    public $incrementing = false;
     protected $fillable = [
         'name'
     ];
@@ -24,6 +25,11 @@ class PermissionModel extends Model
 
     public function roles()
     {
-        return $this->belongsToMany(RoleModel::class, 'role_has_permissions', 'permission_id', 'role_id');
+        return $this->belongsToMany(
+            RoleModel::class,            // Model Role
+            'app_role_has_permissions', // Tabel pivot
+            'permission_id',            // FK di tabel pivot ke Permission
+            'role_id'                   // FK di tabel pivot ke Role
+        )->withTimestamps();
     }
 }
