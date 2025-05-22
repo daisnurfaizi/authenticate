@@ -10,3 +10,11 @@ Route::group(['prefix' => 'auth'], function () {
         Route::post('/logout', 'logout')->name('auth.logout');
     });
 });
+
+Route::group(['prefix' => 'user', 'middleware' => ['IjpAuth']], function () {
+    Route::controller(UserController::class)->group(function () {
+        Route::patch('/{id}', 'update')->name('user.update');
+        Route::get('/{id}', 'show')->name('user.show');
+        Route::get('/', 'showAll')->name('user.showAll');
+    });
+});
