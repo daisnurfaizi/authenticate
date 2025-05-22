@@ -20,25 +20,34 @@ Setelah menjalankan `composer require`, ada beberapa langkah yang perlu Anda lak
    php artisan ijp:install
    ```
 
-   Perintah ini akan menyalin file konfigurasi ke folder `Controller,Middleware,Helper,` aplikasi Anda.
+   Perintah ini akan menyalin file konfigurasi ke folder `Controller,Middleware,Helper,Route,` aplikasi Anda.
+
+   jika tidak muncul secara otomatis maka lajankan publis secara manual
+
+   ```bash
+   php artisan vendor:publish --tag=jwt-auth-routes
+   php artisan vendor:publish --tag=jwt-auth-migrations
+   php artisan vendor:publish --tag=jwt-auth-routes
+   ```
 
 2. **Impementasikan Jwt ke dalam model user**
 
    ```php
    use Tymon\JWTAuth\Contracts\JWTSubject;
+   use Ijp\Auth\Traits\IjpAuth;
 
    class User extends Authenticatable implements JWTSubject
    {
-       use Notifiable,IjpAuth;
+       use Notifiable , IjpAuth;
+        protected $keyType = 'string';
+
+
+       // Implementasi metode yang diperlukan
 
    }
    ```
 
-   Pastikan model User Anda mengimplementasikan interface `JWTSubject` dan menggunakan trait `Notifiable` dan `IjpAuth`.
-
-   ```php
-
-   ```
+   Pastikan model User Anda mengimplementasikan interface `JWTSubject` dan menggunakan trait `Notifiable`.
 
 3. **Tambahkan Middleware ke Kernel.php**
    Jika Anda menggunakan middleware untuk autentikasi dan otorisasi, tambahkan middleware berikut ke dalam file `bootstrap/app.php`:
@@ -46,7 +55,7 @@ Setelah menjalankan `composer require`, ada beberapa langkah yang perlu Anda lak
    ```php
        ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'IjpAuth' => AuthCheck::class,
+            'authcheck' => AuthCheck::class,
         ]);
     })
    ```

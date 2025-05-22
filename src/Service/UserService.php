@@ -3,6 +3,7 @@
 namespace Ijp\Auth\Service;
 
 use App\Helper\ResponseJsonFormater;
+use Ijp\Auth\Traits\PaginateResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class UserService
 {
+    use PaginateResolver;
     protected $userRepository;
 
     public function __construct($userRepository)
@@ -27,6 +29,7 @@ class UserService
      */
     public function login(Request $request)
     {
+
         $credentials = $request->only('username', 'password');
 
         try {
@@ -38,12 +41,13 @@ class UserService
                 );
             }
 
+
             $user = Auth::user();
             $permissions = $user->role && $user->role->permissions
                 ? $user->role->permissions->map(function ($roleHasPermission) {
                     return [
-                        'id' => $roleHasPermission->permission->id,
-                        'name' => $roleHasPermission->permission->name,
+                        'id' => $roleHasPermission->permission && $roleHasPermission->permission->id ? $roleHasPermission->permission->id : null,
+                        'name' => $roleHasPermission->permission && $roleHasPermission->permission->name ? $roleHasPermission->permission->name : null,
                     ];
                 })
                 : [];
@@ -53,20 +57,20 @@ class UserService
                 data: [
                     'id' => $user->id,
                     'username' => $user->username,
-                    'role' => [
-                        'id' => $user->role->id,
-                        'name' => $user->role->name,
-                    ],
+                    'role' => $user->role ? [
+                        'id' => $user->role->id ?? null,
+                        'name' => $user->role->name ?? null,
+                    ] : null,
                     'permissions' => $permissions,
 
                 ]
             )
                 ->withCookie('access_token', $this->createToken([
                     'username' => $request->username,
-                    'role' => [
-                        'id' => $user->role->id,
-                        'name' => $user->role->name,
-                    ],
+                    'role' => $user->role ? [
+                        'id' => $user->role->id ?? null,
+                        'name' => $user->role->name ?? null,
+                    ] : null,
                     'permissions' => $permissions,
                 ]), 60)
                 ->withCookie('refresh_token', $this->createRefreshToken($request), 60 * 24 * 30);
@@ -240,6 +244,118 @@ class UserService
                 message: 'Failed to refresh access token'
             )->withCookie(cookie()->forget('access_token'))
                 ->withCookie(cookie()->forget('refresh_token'));
+        }
+    }
+    // update user
+
+    public function updateUser($data, $id)
+    {
+        // dd($id);
+        try {
+            DB::beginTransaction();
+            $user = $this->userRepository->getUserById($id);
+            if (!$user) {
+                return ResponseJsonFormater::error(
+                    code: 404,
+                    message: 'User not found',
+                );
+            }
+            $userStored = $this->userRepository->updateUser($id, $data->all());
+            DB::commit();
+            return ResponseJsonFormater::success(
+                message: 'User updated successfully',
+                data: [
+                    'id' => $userStored->id,
+                    'username' => $userStored->username,
+                ]
+            );
+        } catch (ValidationException $e) {
+            return ResponseJsonFormater::error(
+                code: 422,
+                message: 'Validation error',
+                data: $e->errors(),
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ResponseJsonFormater::error(
+                code: 500,
+                message: $e->getMessage(),
+            );
+        }
+    }
+    public function deleteUser($id)
+    {
+        try {
+            DB::beginTransaction();
+            $this->userRepository->deleteUser($id);
+            DB::commit();
+            return ResponseJsonFormater::success(
+                message: 'User deleted successfully',
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ResponseJsonFormater::error(
+                code: 500,
+                message: 'Failed to delete user',
+            );
+        }
+    }
+
+    public function getUserById($id)
+    {
+        try {
+            $user = $this->userRepository->getUserById($id);
+            if (!$user) {
+                return ResponseJsonFormater::error(
+                    code: 404,
+                    message: 'User not found',
+                );
+            }
+            return ResponseJsonFormater::success(
+                message: 'User retrieved successfully',
+                data: [
+                    'id' => $user->id,
+                    'username' => $user->username,
+                    'role' => $user->role ? [
+                        'id' => $user->role->id ?? null,
+                        'name' => $user->role->name ?? null,
+                    ] : null,
+                    'permissions' => $user->role && $user->role->permissions
+                        ? $user->role->permissions->map(function ($roleHasPermission) {
+                            return [
+                                'id' => $roleHasPermission->permissions && $roleHasPermission->permissions->id ? $roleHasPermission->permissions->id : null,
+                                'name' => $roleHasPermission->permissions && $roleHasPermission->permissions->name ? $roleHasPermission->permissions->name : null,
+                            ];
+                        })
+                        : [],
+                ]
+            );
+        } catch (\Exception $e) {
+            return ResponseJsonFormater::error(
+                code: 500,
+                message: 'Failed to retrieve user',
+            );
+        }
+    }
+
+    public function getAllUser($request)
+    {
+        try {
+            $paginateResolver = $this->resolvePagination($request);
+            $users = $this->userRepository->getAllUser(
+                columns: ['id', 'username', 'role_id'],
+                paginate: $paginateResolver['paginate'],
+                perPage: $paginateResolver['perPage']
+            );
+            return ResponseJsonFormater::success(
+                message: 'Users retrieved successfully',
+                data: $users,
+            );
+        } catch (\Exception $e) {
+            return ResponseJsonFormater::error(
+                code: 500,
+                message: 'Failed to retrieve users',
+            );
         }
     }
 }
