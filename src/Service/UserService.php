@@ -8,6 +8,7 @@ use Ijp\Auth\Traits\PaginateResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -397,6 +398,59 @@ class UserService
             return ResponseJsonFormater::error(
                 code: 500,
                 message: 'Failed to retrieve users',
+            );
+        }
+    }
+
+
+    public function registerUser(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            $data = Validator::make(
+                $request->all(),
+                [
+                    'username' => 'required|string|max:255|unique:users,username',
+                    'password' => 'required|string|min:8|confirmed',
+                    'role_id' => 'required|exists:app_role,id',
+                    'name' => 'nullable|string|max:30',
+                    'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                ],
+                [
+                    'username.required' => 'Username is required',
+                    'username.unique' => 'Username already exists',
+                    'password.required' => 'Password is required',
+                    'password.min' => 'Password must be at least 8 characters',
+                    'password.confirmed' => 'Password confirmation does not match',
+                    'role_id.required' => 'Role ID is required',
+                    'role_id.exists' => 'Role ID does not exist',
+                ]
+            )->validate();
+
+            $data['password'] = bcrypt($data['password']);
+            $user = $this->userRepository->createUser($data);
+
+            DB::commit();
+            return ResponseJsonFormater::success(
+                message: 'User registered successfully',
+                data: [
+                    'id' => $user->id,
+                    'username' => $user->username,
+                    'role_id' => $user->role_id,
+                ]
+            );
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            return ResponseJsonFormater::error(
+                code: 422,
+                message: 'Validation error',
+                data: $e->errors(),
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ResponseJsonFormater::error(
+                code: 500,
+                message: $e->getMessage(),
             );
         }
     }

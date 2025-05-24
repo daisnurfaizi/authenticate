@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\User\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'auth'], function () {
@@ -16,5 +17,7 @@ Route::group(['prefix' => 'user', 'middleware' => ['IjpAuth']], function () {
         Route::patch('/{id}', 'update')->name('user.update');
         Route::get('/{id}', 'show')->name('user.show');
         Route::get('/', 'showAll')->name('user.showAll');
+        Route::delete('/{id}', 'delete')->name('user.delete');
+        Route::post('/register', 'register')->name('user.register');
     });
 });

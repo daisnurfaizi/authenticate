@@ -125,4 +125,15 @@ class UserRepository extends BaseRepositories
         }
         return false;
     }
+
+    public function deleteUser($id)
+    {
+        return $this->delete($id);
+    }
+
+    public function createUser($data)
+    {
+        $user = $this->create($data);
+        return $user;
+    }
 }

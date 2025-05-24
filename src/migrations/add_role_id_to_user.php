@@ -32,7 +32,8 @@ return new class extends Migration
             $table->datetime('refresh_token_expired_at')->nullable()->after('refresh_token');
             // status
             $table->integer('status')->default(1)->after('refresh_token_expired_at');
-
+            // delete email column
+            $table->dropColumn('email');
             // relation one to many to table app_role
             $table->foreign('role_id')
                 ->references('id')
