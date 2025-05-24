@@ -3,6 +3,7 @@
 namespace Ijp\Auth\Service;
 
 use App\Helper\ResponseJsonFormater;
+use Firebase\JWT\JWT;
 use Ijp\Auth\Traits\PaginateResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Tymon\JWTAuth\Facades\JWTFactory;
 
 class UserService
 {
@@ -29,7 +31,6 @@ class UserService
      */
     public function login(Request $request)
     {
-
         $credentials = $request->only('username', 'password');
 
         try {
@@ -37,20 +38,32 @@ class UserService
             if (!JWTAuth::attempt($credentials)) {
                 return ResponseJsonFormater::error(
                     code: 401,
-                    message: 'username or password is incorrect'
+                    message: 'Username or password is incorrect'
                 );
             }
-
 
             $user = Auth::user();
             $permissions = $user->role && $user->role->permissions
                 ? $user->role->permissions->map(function ($roleHasPermission) {
                     return [
-                        'id' => $roleHasPermission->permission && $roleHasPermission->permission->id ? $roleHasPermission->permission->id : null,
-                        'name' => $roleHasPermission->permission && $roleHasPermission->permission->name ? $roleHasPermission->permission->name : null,
+                        'id' => $roleHasPermission->permission->id ?? null,
+                        'name' => $roleHasPermission->permission->name ?? null,
                     ];
                 })
                 : [];
+
+            // Create tokens
+            $accessToken = $this->generateToken($request, tokenType: 'access_token'); // Access token valid for 30 minutes
+            $refreshToken = $this->generateToken($request, tokenType: 'refresh_token');
+
+            $customClaims = [
+                'refresh_token' => $refreshToken,
+            ];
+
+            // Buat payload manual tanpa pengaruh user
+            $secret = env('JWT_SECRET');
+            // dd($secret);
+            $tokenRefresh = JWT::encode($customClaims, $secret, 'HS256');
 
             return ResponseJsonFormater::success(
                 message: "Success Login",
@@ -62,18 +75,10 @@ class UserService
                         'name' => $user->role->name ?? null,
                     ] : null,
                     'permissions' => $permissions,
-
                 ]
             )
-                ->withCookie('access_token', $this->createToken([
-                    'username' => $request->username,
-                    'role' => $user->role ? [
-                        'id' => $user->role->id ?? null,
-                        'name' => $user->role->name ?? null,
-                    ] : null,
-                    'permissions' => $permissions,
-                ]), 60)
-                ->withCookie('refresh_token', $this->createRefreshToken($request), 60 * 24 * 30);
+                ->withCookie('access_token', $accessToken, 30)
+                ->withCookie('refresh_token', $tokenRefresh);
         } catch (ValidationException $e) {
             return ResponseJsonFormater::error(
                 code: 422,
@@ -93,34 +98,43 @@ class UserService
     }
 
     /**
-     * Create a refresh token for the user.
+     * Generate a token for the user.
      *
      * @param Request $request
+     * @param string $tokenType
      * @return string
      * @throws \Exception
      */
-    public function createRefreshToken(Request $request)
+    private function generateToken(Request $request, string $tokenType): string
     {
         try {
             DB::beginTransaction();
 
-            $token = bin2hex(random_bytes(16));
-            $createdToken = $this->userRepository->storeRefreshToken('username', $request->username, $token);
+            $token = bin2hex(random_bytes(16)); // Token unik
 
-            if (!$createdToken) {
-                throw new \Exception('Failed to create refresh token', 404);
+            if ($tokenType === 'access_token') {
+                $this->userRepository->storeAccessToken('username', $request->username, $token);
+                DB::commit();
+
+                // Membuat access token dengan payload baru
+                return $this->createToken([
+                    'access_token' => $token,
+                ], 'access_token');
+            } elseif ($tokenType === 'refresh_token') {
+                $refreshToken = $this->userRepository->storeRefreshToken('username', $request->username, $token);
+                DB::commit();
+                // Membuat refresh token dengan payload baru
+                return $refreshToken->refresh_token;
+            } else {
+                throw new \Exception('Invalid token type', 400);
             }
-
-            DB::commit();
-
-            return $this->createToken([
-                'refresh_token' => $token,
-            ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception('Failed to create refresh token', 500);
+            throw new \Exception("Failed to create {$tokenType}", 500);
         }
     }
+
+
 
 
     /**
@@ -129,14 +143,41 @@ class UserService
      * @param array $customPayload
      * @return string
      */
-    public function createToken(array $customPayload = [])
+    public function createToken(array $customPayload = [], string $tokenType = 'access_token')
     {
-        // Create payload for token
-        $payload = JWTAuth::factory()->customClaims($customPayload)->make();
+        // Klaim dasar
+        $baseClaims = [
+            'iss' => url()->current(),
+            'iat' => now()->timestamp,
+            'nbf' => now()->timestamp,
+            'exp' => $tokenType === 'access_token'
+                ? now()->addMinutes(30)->timestamp
+                : now()->addDays(7)->timestamp,
+            'jti' => bin2hex(random_bytes(8)),
+            'sub' => Auth::user()->id,
+            'id' => Auth::user()->id,
+            'name' => Auth::user()->name,
+            'username' => Auth::user()->username,
+            'prv' => bin2hex(random_bytes(20)),
+        ];
 
-        // Create token
-        return JWTAuth::fromUser(Auth::user(), $payload);
+        // Tambahkan klaim khusus berdasarkan tipe token
+        if ($tokenType === 'refresh_token') {
+            unset($baseClaims['access_token']); // Pastikan tidak ada access_token
+            $baseClaims['refresh_token'] = $customPayload['refresh_token'] ?? bin2hex(random_bytes(16));
+        } elseif ($tokenType === 'access_token') {
+            $baseClaims['access_token'] = $customPayload['access_token'] ?? bin2hex(random_bytes(16));
+        }
+
+        // Buat token
+        $payload = JWTAuth::factory()->customClaims($baseClaims)->make();
+        return JWTAuth::encode($payload)->get();
     }
+
+
+
+
+
 
     /**
      * Handle user logout.
@@ -159,6 +200,7 @@ class UserService
 
             $payload = JWTAuth::setToken($accessToken)->getPayload();
             $this->userRepository->revokeRefreshToken('username', $payload['username']);
+            $this->userRepository->revokeAccessToken('username', $payload['username']);
 
             DB::commit();
 

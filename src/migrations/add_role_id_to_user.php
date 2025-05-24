@@ -14,20 +14,25 @@ return new class extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            // change id to string
-            $table->string('id', 50)->primary()->change();
+            $table->dropColumn('id');
+            $table->string('id', 50)->primary()->first();
             // change coloumss emmail to username
             $table->string('username', 50)->nullable()->after('email')->unique()->index();
             // add coloumns role_id to users table
-            $table->string('role_id', 50)->nullable()->after('password');
+            $table->string('role_id', 50)->nullable()->after('email');
             // photo 
             $table->string('photo')->nullable()->after('role_id');
             // last_login
             $table->timestamp('last_login')->nullable()->after('photo');
+            //  access token
+            $table->string('access_token')->nullable()->after('last_login');
+            $table->datetime('access_token_expired_at')->nullable()->after('access_token');
             // refresh_token
-            $table->string('refresh_token')->nullable()->after('last_login');
+            $table->string('refresh_token')->nullable()->after('access_token_expired_at');
+            $table->datetime('refresh_token_expired_at')->nullable()->after('refresh_token');
             // status
-            $table->integer('status')->default(1)->after('refresh_token');
+            $table->integer('status')->default(1)->after('refresh_token_expired_at');
+
             // relation one to many to table app_role
             $table->foreign('role_id')
                 ->references('id')
