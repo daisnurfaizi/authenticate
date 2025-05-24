@@ -48,7 +48,7 @@ class UserRepository extends BaseRepositories
 
     public function updateUser($user, $data)
     {
-        $userStored = $this->showBy(field: 'id', value: $user->id);
+        $userStored = $this->showBy(field: 'id', value: $user);
         $userStored->update($data);
         return $userStored;
     }
@@ -67,5 +67,25 @@ class UserRepository extends BaseRepositories
         $userStored->status = $status;
         $userStored->save();
         return $userStored;
+    }
+
+    public function getUserById($id)
+    {
+        $user = $this->showBy(field: 'id', value: $id);
+        if ($user) {
+            return $user;
+        }
+        return throw new \Exception('User not found');
+    }
+
+    public function getAllUser($columns = ['*'], $paginate = false, $perPage = 15)
+    {
+        $query = $this->getModels()::select($columns);
+
+        if ($paginate) {
+            return $query->paginate($perPage)->appends(request()->query());
+        }
+
+        return $query->get();
     }
 }
