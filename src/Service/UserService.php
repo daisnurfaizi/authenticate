@@ -463,7 +463,9 @@ class UserService
                 return ResponseJsonFormater::error(
                     code: 401,
                     message: 'Refresh token not provided in cookie'
-                );
+                )
+                    ->withCookie(cookie()->forget('access_token'))
+                    ->withCookie(cookie()->forget('refresh_token'));
             }
 
             $secret = env('JWT_SECRET');
@@ -473,15 +475,19 @@ class UserService
                 return ResponseJsonFormater::error(
                     code: 401,
                     message: 'Refresh token expired'
-                );
+                )->withCookie(cookie()->forget('access_token'))
+                    ->withCookie(cookie()->forget('refresh_token'));
             }
 
             $user = $this->userRepository->showBy('username', $payload->username);
-            if (!$user) {
+            if (
+                !$user || $user->refresh_token_expired_at < now()
+            ) {
                 return ResponseJsonFormater::error(
                     code: 404,
-                    message: 'User not found'
-                );
+                    message: 'User not found or refresh token expired'
+                )->withCookie(cookie()->forget('access_token'))
+                    ->withCookie(cookie()->forget('refresh_token'));
             }
 
             // Generate new tokens
