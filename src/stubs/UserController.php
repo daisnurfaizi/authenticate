@@ -34,4 +34,21 @@ class UserController extends Controller
     {
         return $this->userService->getAllUser(request: $request);
     }
+
+    // delete user
+    public function delete($id)
+    {
+        return $this->userService->deleteUser(id: $id);
+    }
+
+    // register user
+    public function register(Request $request)
+    {
+        return $this->userService->registerUser(request: $request);
+    }
+
+    public function updateRoleUser(Request $request, $id)
+    {
+        return $this->userService->updateRoleUser(request: $request, id: $id);
+    }
 }

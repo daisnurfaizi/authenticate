@@ -3,7 +3,9 @@
 namespace Ijp\Auth\Service;
 
 use App\Helper\ResponseJsonFormater;
+use Ijp\Auth\Model\RoleHasPermissionModel;
 use Ijp\Auth\Model\RoleModel;
+use Ijp\Auth\Repositories\RoleHasPermissionRepositories;
 use Ijp\Auth\Repositories\RoleRepositories;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -12,12 +14,12 @@ use Illuminate\Validation\ValidationException;
 class RoleService
 {
     protected $roleRepositories;
-    // protected $permissionRepositories;
+    protected $permissionRepositories;
 
     public function __construct()
     {
         $this->roleRepositories = new RoleRepositories(new RoleModel());
-        // $this->permissionRepositories = $permissionRepositories;
+        $this->permissionRepositories = new RoleHasPermissionRepositories(new RoleHasPermissionModel());
     }
 
     public function storeRole($data)
@@ -40,6 +42,19 @@ class RoleService
                 code: 422,
                 message: 'Validation error',
                 data: $e->errors(),
+            );
+        } catch (\Illuminate\Database\QueryException $e) {
+            DB::rollBack();
+            $errorCode = $e->errorInfo[1] ?? null;
+            if ($errorCode == 1062) { // MySQL duplicate entry error code
+                return ResponseJsonFormater::error(
+                    code: 409,
+                    message: 'Role with this name already exists',
+                );
+            }
+            return ResponseJsonFormater::error(
+                code: 500,
+                message: 'Failed to store role',
             );
         } catch (\Exception $e) {
             DB::rollBack();
@@ -149,5 +164,73 @@ class RoleService
             message: 'Roles retrieved successfully',
             data: $roles,
         );
+    }
+
+    public function addRolePermissions($data)
+    {
+        try {
+            DB::beginTransaction();
+
+            $roleHasPermission = $this->permissionRepositories->stotreRoleHasPermission($data);
+
+            if (!$roleHasPermission) {
+                return ResponseJsonFormater::error(
+                    code: 404,
+                    message: 'Role permissions not found',
+                );
+            }
+            DB::commit();
+            return ResponseJsonFormater::success(
+                message: 'Role permissions updated successfully',
+                data: $roleHasPermission,
+            );
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            return ResponseJsonFormater::error(
+                code: 422,
+                message: 'Validation error',
+                data: $e->errors(),
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ResponseJsonFormater::error(
+                code: 500,
+                message: 'Failed to update role permissions' . $e->getMessage(),
+            );
+        }
+    }
+
+    public function updateRolePermissions($data)
+    {
+        try {
+            DB::beginTransaction();
+
+            $roleHasPermission = $this->roleRepositories->updateRoleHasPermission($data);
+
+            if (!$roleHasPermission) {
+                return ResponseJsonFormater::error(
+                    code: 404,
+                    message: 'Role permissions not found',
+                );
+            }
+            DB::commit();
+            return ResponseJsonFormater::success(
+                message: 'Role permissions updated successfully',
+                data: $roleHasPermission,
+            );
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            return ResponseJsonFormater::error(
+                code: 422,
+                message: 'Validation error',
+                data: $e->errors(),
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ResponseJsonFormater::error(
+                code: 500,
+                message: 'Failed to update role permissions' . $e->getMessage(),
+            );
+        }
     }
 }

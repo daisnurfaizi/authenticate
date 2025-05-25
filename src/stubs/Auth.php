@@ -16,6 +16,7 @@ Route::group(['prefix' => 'auth'], function () {
 Route::group(['prefix' => 'user', 'middleware' => ['IjpAuth']], function () {
     Route::controller(UserController::class)->group(function () {
         Route::patch('/{id}', 'update')->name('user.update');
+        Route::patch('/role/{id}', 'updateRoleUser')->name('user.updateRole');
         Route::get('/{id}', 'show')->name('user.show');
         Route::get('/', 'showAll')->name('user.showAll');
         Route::delete('/{id}', 'delete')->name('user.delete');

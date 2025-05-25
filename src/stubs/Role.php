@@ -14,5 +14,7 @@ Route::group([
         Route::post('/', 'store')->name('auth.role.store');
         Route::patch('/{id}', 'update')->name('auth.role.update');
         Route::delete('/{id}', 'delete')->name('auth.role.destroy');
+        Route::post('/permission', 'addPermissionToRole')->name('auth.role.add.permission');
+        Route::put('/permissions', 'updateRolePermission')->name('auth.role.update.permission.id');
     });
 });

@@ -43,4 +43,16 @@ class RoleController extends Controller
         // Validate the request data
         return $this->roleService->getRoleById($id);
     }
+
+    public function addPermissionToRole(Request $request)
+    {
+        // Validate the request data
+        return $this->roleService->addRolePermissions(data: $request);
+    }
+
+    public function updateRolePermission(Request $request)
+    {
+        // Validate the request data
+        return $this->roleService->updateRolePermissions(data: $request);
+    }
 }
