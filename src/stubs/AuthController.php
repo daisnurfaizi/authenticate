@@ -44,4 +44,9 @@ class AuthController extends Controller
         // set token to cookies
         return $token;
     }
+
+    public function refreshToken(Request $request)
+    {
+        return $this->userService->refresh($request);
+    }
 }

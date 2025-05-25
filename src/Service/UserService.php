@@ -4,6 +4,7 @@ namespace Ijp\Auth\Service;
 
 use App\Helper\ResponseJsonFormater;
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use Ijp\Auth\Traits\PaginateResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -57,15 +58,6 @@ class UserService
             $accessToken = $this->generateToken($request, tokenType: 'access_token'); // Access token valid for 30 minutes
             $refreshToken = $this->generateToken($request, tokenType: 'refresh_token');
 
-            $customClaims = [
-                'refresh_token' => $refreshToken,
-            ];
-
-            // Buat payload manual tanpa pengaruh user
-            $secret = env('JWT_SECRET');
-            // dd($secret);
-            $tokenRefresh = JWT::encode($customClaims, $secret, 'HS256');
-
             return ResponseJsonFormater::success(
                 message: "Success Login",
                 data: [
@@ -79,7 +71,7 @@ class UserService
                 ]
             )
                 ->withCookie('access_token', $accessToken, 30)
-                ->withCookie('refresh_token', $tokenRefresh);
+                ->withCookie('refresh_token', $refreshToken, 60 * 24 * 7); // Refresh token valid for 7 days
         } catch (ValidationException $e) {
             return ResponseJsonFormater::error(
                 code: 422,
@@ -125,7 +117,13 @@ class UserService
                 $refreshToken = $this->userRepository->storeRefreshToken('username', $request->username, $token);
                 DB::commit();
                 // Membuat refresh token dengan payload baru
-                return $refreshToken->refresh_token;
+                $tokenRefresh = [
+                    'refresh_token' => $refreshToken->refresh_token,
+                    'username' => $refreshToken->username,
+                    'iat' => time(), // Waktu saat ini
+                    'exp' => $refreshToken->refresh_token_expired_at->timestamp, // Token kedaluwarsa sesuai waktu yang ditentukan
+                ];
+                return JWT::encode($tokenRefresh, env('JWT_SECRET'), 'HS256');
             } else {
                 throw new \Exception('Invalid token type', 400);
             }
@@ -451,6 +449,79 @@ class UserService
             return ResponseJsonFormater::error(
                 code: 500,
                 message: $e->getMessage(),
+            );
+        }
+    }
+
+    public function refresh($request)
+    {
+        try {
+            $refreshToken = $request->cookie('refresh_token');
+            $accessToken = $request->cookie('access_token');
+
+            if (!$refreshToken) {
+                return ResponseJsonFormater::error(
+                    code: 401,
+                    message: 'Refresh token not provided in cookie'
+                );
+            }
+
+            $secret = env('JWT_SECRET');
+            $payload = JWT::decode($refreshToken, new Key($secret, 'HS256'));
+
+            if (isset($payload->exp) && $payload->exp < time()) {
+                return ResponseJsonFormater::error(
+                    code: 401,
+                    message: 'Refresh token expired'
+                );
+            }
+
+            $user = $this->userRepository->showBy('username', $payload->username);
+            if (!$user) {
+                return ResponseJsonFormater::error(
+                    code: 404,
+                    message: 'User not found'
+                );
+            }
+
+            // Generate new tokens
+            $newTokenAccess = $this->userRepository->storeAccessToken('username', $user->username, bin2hex(random_bytes(16)));
+            $newTokenRefresh = $this->userRepository->storeRefreshToken('username', $user->username, bin2hex(random_bytes(16)));
+
+            $newAccessToken = [
+                'iss' => url()->current(),
+                'iat' => now()->timestamp,
+                'nbf' => now()->timestamp,
+                'exp' => $newTokenAccess->access_token_expired_at->timestamp,
+                'jti' => bin2hex(random_bytes(8)),
+                'sub' => $newTokenAccess->id,
+                'username' => $newTokenAccess->username,
+                'access_token' => $newTokenAccess->access_token,
+            ];
+            $newAccessTokenRefresh = [
+                'refresh_token' => $newTokenRefresh->refresh_token,
+                'username' => $newTokenRefresh->username,
+                'iat' => time(),
+                'exp' => $newTokenRefresh->refresh_token_expired_at->timestamp,
+            ];
+
+            $access = JWT::encode($newAccessToken, $secret, 'HS256');
+            $refresh = JWT::encode($newAccessTokenRefresh, $secret, 'HS256');
+
+            // Set secure cookies
+            return ResponseJsonFormater::success(
+                message: 'Access token refreshed successfully'
+            )->withCookie(cookie('access_token', $access, 60, '/', null, true, true))
+                ->withCookie(cookie('refresh_token', $refresh, 60 * 24 * 7, '/', null, true, true));
+        } catch (\UnexpectedValueException $e) {
+            return ResponseJsonFormater::error(
+                code: 401,
+                message: 'Invalid token: ' . $e->getMessage()
+            );
+        } catch (\Exception $e) {
+            return ResponseJsonFormater::error(
+                code: 500,
+                message: 'Failed to refresh token: ' . $e->getMessage()
             );
         }
     }

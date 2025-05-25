@@ -9,6 +9,7 @@ Route::group(['prefix' => 'auth'], function () {
         Route::post('/login', 'login')->name('auth.login');
         // Route::post('/register', 'register')->name('auth.register');
         Route::post('/logout', 'logout')->name('auth.logout');
+        Route::post('/refresh', 'refreshToken')->name('auth.refresh');
     });
 });
 
